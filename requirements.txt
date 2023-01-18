@@ -1,0 +1,5 @@
+environs==9.5.0
+fake-useragent==1.1.1
+mysql-connector-python==8.0.31
+Scrapy==2.7.1
+scrapy-fake-useragent==1.4.4
