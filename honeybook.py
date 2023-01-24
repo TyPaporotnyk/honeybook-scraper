@@ -133,7 +133,7 @@ class HoneyBook(object):
                 'phone': empty_str_to_none(getPhoneNumberFromDescription(client.get('description'))),
                 'email': empty_str_to_none(getEmailFromDescription(client.get('description'))),
                 'website': client.get('creator').get('network').get('public_profile_url'),
-                # 'time_published': datetime.strptime(client.get('created_at').replace('T', ' ').replace('Z', ''), '%Y-%m-%d %H:%M:%S.%f'),
+                'time_published': datetime.strptime(client.get('created_at').replace('T', ' ').replace('Z', ''), '%Y-%m-%d %H:%M:%S.%f'),
             }
             info.update(self.getClientProfileInfo(client.get('creator').get('_id')))
             clients_info.append(info)
