@@ -1,5 +1,4 @@
-from scraper.notifications.honeybook import HoneyBook
-from scraper.scrape.scrape import parse
+from honeybook import HoneyBook, getDataFromNotif
 from connection.connection import DBConnector
 import requests
 
@@ -15,24 +14,28 @@ def send_to_telegram(message: str) -> None:
             'text': message
         }
 
+        response = requests.post(apiURL, json=params)
         try:
-            response = requests.post(apiURL, json=params)
+            response.raise_for_status()
         except Exception as e:
             print(e)
 
 
 def get_leeds() -> list:
-    HoneyBook.Instance().getAllNotifications()
-    parse()
+    user_api = HoneyBook()
+    client_information = getDataFromNotif(user_api)
 
-    return DBConnector.Instance().get_new_leeds()
+    for client in client_information:
+        DBConnector.Instance().store_db(client)
 
 
-def print_leads(leeds : list) -> None:
+def print_leads() -> None:
+    leeds = DBConnector.Instance().get_new_leeds()
     for leed in leeds:
         message = f"New opportunity near {leed[1]} for {leed[2]}, published by " \
                 f"{leed[3]}.\nFollow the link for details - https://artlook.us/leads/?id={leed[0]}"
         send_to_telegram(message=message)
 
 if __name__ == '__main__':
-    print_leads(get_leeds())
+    get_leeds()
+    print_leads()

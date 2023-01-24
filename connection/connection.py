@@ -30,8 +30,8 @@ class DBConnector(object):
 
         if not result:
             self.curr.execute('INSERT INTO notifications '\
-                            ' (source_id, title, price, location, tags, description, name, type, website, time_published, created_at)'\
-                            ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',(
+                            ' (source_id, title, price, location, tags, description, name, type, website, phone, email, instagram, facebook, pinterest, snapchat, time_published, created_at)'\
+                            ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',(
                                 item['source_id'],
                                 item['title'],
                                 item['price'],
@@ -41,6 +41,12 @@ class DBConnector(object):
                                 item['name'],
                                 item['type'],
                                 item['website'],
+                                item['phone'],
+                                item['email'],
+                                item['instagram'],
+                                item['facebook'],
+                                item['pinterest'],
+                                item['snapchat'],
                                 item['time_published'],
                                 datetime.now()))
 
