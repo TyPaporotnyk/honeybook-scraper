@@ -1,9 +1,11 @@
 from honeybook import HoneyBook, getDataFromNotif
 from connection.connection import DBConnector
+from utils import create_logger
 import requests
 
 from config import BOT_TOKEN, CHAT_IDS
 
+logger = create_logger('Main')
 
 def send_to_telegram(message: str) -> None:
     apiURL = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
@@ -18,7 +20,7 @@ def send_to_telegram(message: str) -> None:
         try:
             response.raise_for_status()
         except Exception as e:
-            print(e)
+            logger.error('Ошибка при выводе сообщения в Телеграмм')
 
 
 def get_leeds() -> list:
@@ -27,6 +29,7 @@ def get_leeds() -> list:
 
     for client in client_information:
         DBConnector.Instance().store_db(client)
+    logger.info('Данные были загружены в базу данных')
 
 
 def print_leads() -> None:
