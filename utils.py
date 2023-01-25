@@ -31,7 +31,7 @@ def setBudget(min_budget, max_budget):
     return f'{min_budget}$ - {max_budget}$'
 
 def getPhoneNumberFromDescription(description: str):
-    phone_numbers = re.search(r'((\+)?\b(8|38)?(0[\d]{2}))([\d-]{5,8})([\d]{2})', description)
+    phone_numbers = re.search(r'((\+)?\b(8|38)?([\d]{3}))([\d-]{5,8})([\d]{2})', description)
     if phone_numbers:
         return phone_numbers.group(0)
 
