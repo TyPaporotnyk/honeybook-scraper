@@ -32,7 +32,8 @@ def setBudget(min_budget, max_budget):
 
 def getPhoneNumberFromDescription(description: str):
     phone_numbers = re.search(r'((\+)?\b(8|38)?(0[\d]{2}))([\d-]{5,8})([\d]{2})', description)
-    return phone_numbers.group(0)
+    if phone_numbers:
+        return phone_numbers.group(0)
 
 def getEmailFromDescription(description: str):
     email = re.findall(r'\b([a-z0-9._-]+@[a-z0-9.-]+)\b', description)
