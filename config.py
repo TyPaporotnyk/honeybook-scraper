@@ -3,6 +3,9 @@ from environs import Env
 env = Env()
 env.read_env()
 
+HONEYBOOK_EMAIL = env.str('HB_EMAIL')
+HONEYBOOK_PASSWORD = env.str('HB_PASSWORD')
+
 DB_USER = env.str('DB_USER')
 DB_PASSWORD = env.str('DB_PASSWORD')
 DB_DATABASE = env.str('DB_DATABASE')

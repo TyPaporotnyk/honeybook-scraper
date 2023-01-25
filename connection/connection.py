@@ -1,11 +1,14 @@
-from prototypes.singleton import Singleton
-import mysql.connector
 from config import DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE
+from prototypes.singleton import Singleton
 from datetime import datetime, timedelta
+import mysql.connector
+
+from utils import create_logger
 
 @Singleton
 class DBConnector(object):
     def __init__(self):
+        self.logger = create_logger("DBConnection")
         self.create_connection()
 
     def __str__(self):
@@ -20,8 +23,7 @@ class DBConnector(object):
         )
 
         self.curr = self.conn.cursor()
-
-        print('\n\n\nConnection success\n\n\n')
+        self.logger.info('Соединение было установлено')
 
 
     def store_db(self, item):
@@ -29,28 +31,31 @@ class DBConnector(object):
         result = self.curr.fetchone()
 
         if not result:
-            self.curr.execute('INSERT INTO notifications '\
-                            ' (source_id, title, price, location, tags, description, name, type, website, phone, email, instagram, facebook, pinterest, snapchat, time_published, created_at)'\
-                            ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',(
-                                item['source_id'],
-                                item['title'],
-                                item['price'],
-                                item['location'],
-                                item['tags'],
-                                item['description'],
-                                item['name'],
-                                item['type'],
-                                item['website'],
-                                item['phone'],
-                                item['email'],
-                                item['instagram'],
-                                item['facebook'],
-                                item['pinterest'],
-                                item['snapchat'],
-                                item['time_published'],
-                                datetime.now()))
+            try:
+                self.curr.execute('INSERT INTO notifications '\
+                                ' (source_id, title, price, location, tags, description, name, type, website, phone, email, instagram, facebook, pinterest, snapchat, time_published, created_at)'\
+                                ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',(
+                                    item['source_id'],
+                                    item['title'],
+                                    item['price'],
+                                    item['location'],
+                                    item['tags'],
+                                    item['description'],
+                                    item['name'],
+                                    item['type'],
+                                    item['website'],
+                                    item['phone'],
+                                    item['email'],
+                                    item['instagram'],
+                                    item['facebook'],
+                                    item['pinterest'],
+                                    item['snapchat'],
+                                    item['time_published'],
+                                    datetime.now()))
 
-            self.conn.commit()
+                self.conn.commit()
+            except Exception as e:
+                self.logger.error('Ошибка при загрузке данных в базу данных')
 
     def get_new_leeds(self):
         curr_date = datetime.now() - timedelta(hours=0, minutes=30)

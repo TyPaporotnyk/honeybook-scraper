@@ -1,7 +1,9 @@
 from fake_useragent import UserAgent
 from utils import *
+from config import HONEYBOOK_EMAIL, HONEYBOOK_PASSWORD
 from requests import Session
 from datetime import datetime
+import time
 
 class HoneyBook(object):
     def __init__(self, logger = create_logger('HoneyBook')) -> None:
@@ -20,7 +22,7 @@ class HoneyBook(object):
     def setAccessToken(self) -> None:
         """Получает Access tokent и задает его в headeres"""
         json_data = {
-            'password': 'Artlook199!',
+            'password': HONEYBOOK_PASSWORD,
             'trust_device': True,
             'source': 'link',
             'sourceData': {},
@@ -28,7 +30,7 @@ class HoneyBook(object):
         }
 
         response = self.session.post(
-            'https://api.honeybook.com/api/v2/users/info%40artlook.us/tokens',
+            f'https://api.honeybook.com/api/v2/users/{HONEYBOOK_EMAIL}/tokens',
             json=json_data,
         )
         try:
@@ -50,7 +52,6 @@ class HoneyBook(object):
             })
         except Exception as e:
             self.logger.error('Ошибка получение access токена')
-            raise
 
     def markAllNotificationsAsSeen(self) -> None:
         """Помечает все уведомления как просмотренные"""
@@ -71,7 +72,6 @@ class HoneyBook(object):
 
     def getAllNotifications(self) -> list:
         """Возвращает все новые уведомления и помечает их как просмотренные"""
-
         params = {
             'ctxu': self.ctxu,
             'ctxc': self.ctxc,
@@ -90,19 +90,19 @@ class HoneyBook(object):
                 notifs = data.get('activity_notifications')
 
                 for notif in notifs:
-                    if not notif.get('seen'):
-                        id = notif.get('data').get('opportunity_id')
+                    # if not notif.get('seen'):
+                    id = notif.get('data').get('opportunity_id')
+                    if id is None:
+                        id = notif.get('data').get('opportunity_ids')
+
                         if id is None:
-                            id = notif.get('data').get('opportunity_ids')
+                            continue
 
-                            if id is None:
-                                continue
+                        id = ','.join(id)
 
-                            id = ','.join(id)
+                    notifications.append(id)
 
-                        notifications.append(id)
-
-                # self.markAllNotificationsAsSeen()
+                self.markAllNotificationsAsSeen()
         except Exception as e:
             self.logger.error('Ошибка получения списка уведомлений')
             self.logger.error(e)
@@ -121,6 +121,7 @@ class HoneyBook(object):
             clients = self.getClientInfoById(id)
 
         for client in clients:
+            time.sleep(5)
             info = {
                 'source_id': client.get('_id'),
                 'title': client.get('looking_for'),
@@ -159,12 +160,12 @@ class HoneyBook(object):
         response = self.session.get(url, params=params)
         try:
             response.raise_for_status()
+            return [response.json().get('data')[0]]
 
         except Exception as e:
             self.logger.error('Ошибка при получении информации о клиенте')
-            self.logger.error(e)
-
-        return [response.json().get('data')[0]]
+            # self.logger.error(e)
+            return []
 
     def getClientInfoByIds(self, client_ids: str) -> list:
         """Возвращет json файл от сайта по айди клиентов"""
@@ -179,11 +180,12 @@ class HoneyBook(object):
 
         try:
             response.raise_for_status()
+            return response.json().get('data')
         except Exception as e:
             self.logger.error('Ошибка при получении информации о клиентах')
-            self.logger.error(e)
+            # self.logger.error(e)
 
-        return response.json().get('data')
+        return []
 
     def getClientProfileInfo(self, client_id: str) -> dict:
         """Возвращает контактную информацию клиента"""
@@ -199,6 +201,7 @@ class HoneyBook(object):
             response.raise_for_status()
         except Exception as e:
             self.logger.error('Ошибка при получении контактной информации клиента')
+            self.logger.error(e)
         network = response.json()['network']
 
         return {
