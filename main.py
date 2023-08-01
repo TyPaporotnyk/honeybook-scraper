@@ -6,7 +6,10 @@ from utils import create_logger
 logger = create_logger(__name__)
 
 
-def get_leeds() -> list:
+def get_contacts():
+    """
+    Gets all contacts and adds up it to the database
+    """
     user_api = HoneyBook()
     client_information = get_data_from_notif(user_api)
 
@@ -15,7 +18,10 @@ def get_leeds() -> list:
     logger.info('Данные были загружены в базу данных')
 
 
-def print_leads():
+def print_contacts():
+    """
+    Send messages about collected contacts to telegram chats at last 30 minutes
+    """
     leeds = DBConnector.instance().get_new_leeds()
     for lead in leeds:
         message = f"New opportunity near {lead[1]} for {lead[2]}, published by " \
@@ -24,5 +30,5 @@ def print_leads():
 
 
 if __name__ == '__main__':
-    get_leeds()
-    print_leads()
+    get_contacts()
+    print_contacts()

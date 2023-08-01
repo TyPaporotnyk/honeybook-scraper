@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Dict, Optional
 
 from fake_useragent import UserAgent
 from requests import HTTPError, Session
@@ -20,6 +20,9 @@ class AuthenticationError(Exception):
 
 
 class HoneyBook(object):
+    """
+    HoneyBook account implementation
+    """
     def __init__(self, logger=create_logger('HoneyBook')) -> None:
         self.logger = logger
         self.session = Session()
@@ -33,8 +36,11 @@ class HoneyBook(object):
         })
         self.set_access_token()
 
-    def set_access_token(self) -> None:
-        """Получает Access token и задает его в headers"""
+    def set_access_token(self):
+        """
+        Gets access token and adds it to headers
+        Raises :class:`AuthenticationError`, if authentication is failed.
+        """
         json_data = {
             'password': HONEYBOOK_PASSWORD,
             'trust_device': True,
@@ -68,9 +74,9 @@ class HoneyBook(object):
             self.logger.error(f'Ошибка получение access token: {repr(e)}')
             raise AuthenticationError('Ошибка получение access token', e)
 
-    def _mark_all_notifications_as_seen(self) -> None:
+    def _mark_all_notifications_as_seen(self):
         """
-        Помечает все уведомления как просмотренные
+        Marks all notifications as seen
         """
         params = {
             'ctxu': self.ctxu,
@@ -87,8 +93,10 @@ class HoneyBook(object):
         except HTTPError as e:
             self.logger.error(f'Ошибка при помечении всех уведомлений как прочитаные: {repr(e)}')
 
-    def get_all_notifications(self) -> list:
-        """Возвращает все новые уведомления и помечает их как просмотренные"""
+    def get_all_notifications(self) -> List:
+        """
+        Gets all notifications
+        """
         params = {
             'ctxu': self.ctxu,
             'ctxc': self.ctxc,
@@ -127,9 +135,9 @@ class HoneyBook(object):
         self.logger.info(f'Получено {len(notifications)} новых уведомлений')
         return notifications
 
-    def get_client_info(self, client_id: str) -> list:
+    def get_client_info(self, client_id: str) -> List:
         """
-        Возвращет данные о клиенте по его айди
+        Gets a client info by an id
         """
         clients_info = []
 
@@ -162,9 +170,9 @@ class HoneyBook(object):
 
         return clients_info
 
-    def _get_client_info_by_id(self, client_id: str) -> list:
+    def _get_client_info_by_id(self, client_id: str) -> List:
         """
-        Возвращет json файл от сайта по айди клиента
+        Gets client info by id
         """
         params = {
             'ctxu': self.ctxu,
@@ -189,7 +197,7 @@ class HoneyBook(object):
 
     def _get_client_info_by_ids(self, client_ids: str) -> List:
         """
-        Возвращет json файл из запроса по client_ids
+        Gets client info by ids
         """
         params = {
             'ctxu': self.ctxu,
@@ -208,9 +216,9 @@ class HoneyBook(object):
 
         return []
 
-    def get_client_profile_info(self, client_id: str) -> dict:
+    def get_client_profile_info(self, client_id: str) -> Dict:
         """
-        Возвращает контактную информацию клиента
+        Gets a client profile info
         """
         params = {
             'ctxu': self.ctxu,
@@ -237,6 +245,9 @@ class HoneyBook(object):
 
 
 def get_data_from_notif(client_api: HoneyBook) -> Optional[List]:
+    """
+    Gets contacts from notifications
+    """
     notifications = client_api.get_all_notifications()
     client_information = [info for client in notifications for info in client_api.get_client_info(client)]
     client_api.logger.info(f'Из {len(notifications)} уведомлений получено '

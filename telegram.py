@@ -7,7 +7,10 @@ from utils import create_logger
 logger = create_logger(__name__)
 
 
-def send_to_telegram(message: str) -> None:
+def send_to_telegram(message: str):
+    """
+    Sends a message to telegram chats
+    """
     api_url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
 
     for chat_id in CHAT_IDS:
