@@ -5,7 +5,7 @@ from typing import Optional
 
 def create_logger(name: str, log_level=logging.DEBUG) -> logging.Logger:
     """
-    Creates logger
+    Creates a logger
     """
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
@@ -20,7 +20,7 @@ def create_logger(name: str, log_level=logging.DEBUG) -> logging.Logger:
 
 def empty_str_to_none(s: Optional[str]) -> Optional[str]:
     """
-    Converts empty string to Null
+    Converts an empty string to Null
     """
     if s is None:
         return s
@@ -32,7 +32,7 @@ def empty_str_to_none(s: Optional[str]) -> Optional[str]:
 
 def set_budget(min_budget: Optional[str], max_budget: Optional[str]) -> str:
     """
-    Sets price format
+    Sets a price format
     """
     if max_budget is None and min_budget is None:
         return None
