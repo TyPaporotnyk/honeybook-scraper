@@ -13,4 +13,3 @@ DB_HOST = env.str('DB_HOST')
 
 BOT_TOKEN = env.str('BOT_TOKEN')
 CHAT_IDS = env.list('CHAT_IDS')
-

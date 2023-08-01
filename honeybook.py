@@ -1,12 +1,26 @@
-from fake_useragent import UserAgent
-from utils import *
-from config import HONEYBOOK_EMAIL, HONEYBOOK_PASSWORD
-from requests import Session
-from datetime import datetime
 import time
+from datetime import datetime
+from typing import List, Optional
+
+from fake_useragent import UserAgent
+from requests import HTTPError, Session
+
+from config import HONEYBOOK_EMAIL, HONEYBOOK_PASSWORD
+from utils import (create_logger, empty_str_to_none, get_email,
+                   get_phone_number, set_budget)
+
+
+class AuthenticationError(Exception):
+    """
+    Custom authentication exception class
+    """
+    def __init__(self, message, errors):
+        super().__init__(message)
+        self.errors = errors
+
 
 class HoneyBook(object):
-    def __init__(self, logger = create_logger('HoneyBook')) -> None:
+    def __init__(self, logger=create_logger('HoneyBook')) -> None:
         self.logger = logger
         self.session = Session()
         self.session.headers.update({
@@ -17,10 +31,10 @@ class HoneyBook(object):
             'Accept-Language': 'ru',
             'Accept': 'application/json, text/plain, */*',
         })
-        self.setAccessToken()
+        self.set_access_token()
 
-    def setAccessToken(self) -> None:
-        """Получает Access tokent и задает его в headeres"""
+    def set_access_token(self) -> None:
+        """Получает Access token и задает его в headers"""
         json_data = {
             'password': HONEYBOOK_PASSWORD,
             'trust_device': True,
@@ -50,11 +64,14 @@ class HoneyBook(object):
                 'HB-Trusted-Device': self.trusted_device,
                 'HB-Api-Client-Version': str(self.api_version)
             })
-        except Exception as e:
-            self.logger.error('Ошибка получение access токена')
+        except HTTPError as e:
+            self.logger.error(f'Ошибка получение access token: {repr(e)}')
+            raise AuthenticationError('Ошибка получение access token', e)
 
-    def markAllNotificationsAsSeen(self) -> None:
-        """Помечает все уведомления как просмотренные"""
+    def _mark_all_notifications_as_seen(self) -> None:
+        """
+        Помечает все уведомления как просмотренные
+        """
         params = {
             'ctxu': self.ctxu,
             'ctxc': self.ctxc,
@@ -67,10 +84,10 @@ class HoneyBook(object):
             response.raise_for_status()
 
             self.logger.info('Все уведомления помечены как прочитанные')
-        except Exception:
-            self.logger.error('Ошибка при помечении всех уведомлений как прочитаные')
+        except HTTPError as e:
+            self.logger.error(f'Ошибка при помечении всех уведомлений как прочитаные: {repr(e)}')
 
-    def getAllNotifications(self) -> list:
+    def get_all_notifications(self) -> list:
         """Возвращает все новые уведомления и помечает их как просмотренные"""
         params = {
             'ctxu': self.ctxu,
@@ -85,24 +102,24 @@ class HoneyBook(object):
             response.raise_for_status()
 
             data = response.json()
-            is_unsin = data.get('has_unseen_notifications')
-            if is_unsin:
-                notifs = data.get('activity_notifications')
+            is_unseen = data.get('has_unseen_notifications')
+            if is_unseen:
+                notifications = data.get('activity_notifications')
 
-                for notif in notifs:
-                    # if not notif.get('seen'):
-                    id = notif.get('data').get('opportunity_id')
-                    if id is None:
-                        id = notif.get('data').get('opportunity_ids')
+                for notification in notifications:
+                    # if not notification.get('seen'):
+                    notification_id = notification.get('data').get('opportunity_id')
+                    if notification_id is None:
+                        notification_id = notification.get('data').get('opportunity_ids')
 
-                        if id is None:
+                        if notification_id is None:
                             continue
 
-                        id = ','.join(id)
+                        notification_id = ','.join(notification_id)
 
-                    notifications.append(id)
+                    notifications.append(notification_id)
 
-                self.markAllNotificationsAsSeen()
+                self._mark_all_notifications_as_seen()
         except Exception as e:
             self.logger.error('Ошибка получения списка уведомлений')
             self.logger.error(e)
@@ -110,41 +127,45 @@ class HoneyBook(object):
         self.logger.info(f'Получено {len(notifications)} новых уведомлений')
         return notifications
 
-    def getClientInfo(self, id: str) -> list:
-        """Возвращет данные о клиенте по его айди"""
-        clients = []
+    def get_client_info(self, client_id: str) -> list:
+        """
+        Возвращет данные о клиенте по его айди
+        """
         clients_info = []
 
-        if ',' in id:
-            clients = self.getClientInfoByIds(id)
+        if ',' in client_id:
+            clients = self._get_client_info_by_ids(client_id)
         else:
-            clients = self.getClientInfoById(id)
+            clients = self._get_client_info_by_id(client_id)
 
         for client in clients:
             time.sleep(5)
             info = {
                 'source_id': client.get('_id'),
                 'title': client.get('looking_for'),
-                'price': setBudget(client.get('min_budget'), client.get('max_budget')),
+                'price': set_budget(client.get('min_budget'), client.get('max_budget')),
                 'location': client.get('location'),
                 'tags': ','.join(client.get('vendor_types')),
                 'description': client.get('description'),
                 'name': client.get('creator').get('full_name'),
                 'type': client.get('creator').get('user_type_name'),
-                'phone': empty_str_to_none(getPhoneNumberFromDescription(client.get('description'))),
-                'email': empty_str_to_none(getEmailFromDescription(client.get('description'))),
+                'phone': empty_str_to_none(get_phone_number(client.get('description'))),
+                'email': empty_str_to_none(get_email(client.get('description'))),
                 'website': client.get('creator').get('network').get('public_profile_url'),
-                'time_published': datetime.strptime(client.get('created_at').replace('T', ' ').replace('Z', ''), '%Y-%m-%d %H:%M:%S.%f'),
+                'time_published': datetime.strptime(client.get('created_at')
+                                                    .replace('T', ' ').replace('Z', ''), '%Y-%m-%d %H:%M:%S.%f'),
             }
-            info.update(self.getClientProfileInfo(client.get('creator').get('_id')))
+            info.update(self.get_client_profile_info(client.get('creator').get('_id')))
             clients_info.append(info)
 
-        self.logger.debug(f'Получено данных из {len(id.split(","))} id')
+        self.logger.debug(f'Получено данных из {len(client_id.split(","))} id')
 
         return clients_info
 
-    def getClientInfoById(self, client_id: str) -> list:
-        """Возвращет json файл от сайта по айди клиента"""
+    def _get_client_info_by_id(self, client_id: str) -> list:
+        """
+        Возвращет json файл от сайта по айди клиента
+        """
         params = {
             'ctxu': self.ctxu,
             'ctxc': self.ctxc,
@@ -162,33 +183,35 @@ class HoneyBook(object):
             response.raise_for_status()
             return [response.json().get('data')[0]]
 
-        except Exception as e:
-            self.logger.error('Ошибка при получении информации о клиенте')
-            # self.logger.error(e)
+        except HTTPError as e:
+            self.logger.error(f'Ошибка при получении информации о клиенте: {repr(e)}')
             return []
 
-    def getClientInfoByIds(self, client_ids: str) -> list:
-        """Возвращет json файл от сайта по айди клиентов"""
+    def _get_client_info_by_ids(self, client_ids: str) -> List:
+        """
+        Возвращет json файл из запроса по client_ids
+        """
         params = {
             'ctxu': self.ctxu,
             'ctxc': self.ctxc,
             'opportunity_ids': client_ids,
         }
-        url = f'https://api.honeybook.com/api/v2/network/opportunities'
+        url = 'https://api.honeybook.com/api/v2/network/opportunities'
 
         response = self.session.get(url, params=params)
 
         try:
             response.raise_for_status()
             return response.json().get('data')
-        except Exception as e:
-            self.logger.error('Ошибка при получении информации о клиентах')
-            # self.logger.error(e)
+        except HTTPError as e:
+            self.logger.error(f'Ошибка при получении информации о клиентах: {repr(e)}')
 
         return []
 
-    def getClientProfileInfo(self, client_id: str) -> dict:
-        """Возвращает контактную информацию клиента"""
+    def get_client_profile_info(self, client_id: str) -> dict:
+        """
+        Возвращает контактную информацию клиента
+        """
         params = {
             'ctxu': self.ctxu,
             'ctxc': self.ctxc,
@@ -213,9 +236,10 @@ class HoneyBook(object):
         }
 
 
-def getDataFromNotif(client_api: HoneyBook) -> None:
-    notifications = client_api.getAllNotifications()
-    clientInforations = [info for client in notifications for info in client_api.getClientInfo(client)]
-    client_api.logger.info(f'Из {len(notifications)} уведомлений получено {len(clientInforations)} данных о пользователях')
+def get_data_from_notif(client_api: HoneyBook) -> Optional[List]:
+    notifications = client_api.get_all_notifications()
+    client_information = [info for client in notifications for info in client_api.get_client_info(client)]
+    client_api.logger.info(f'Из {len(notifications)} уведомлений получено '
+                           f'{len(client_information)} данных о пользователях')
 
-    return clientInforations
+    return client_information

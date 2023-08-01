@@ -1,7 +1,8 @@
 import logging
 import re
 
-def create_logger(name: str, log_level = logging.DEBUG) -> logging.Logger:
+
+def create_logger(name: str, log_level=logging.DEBUG) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
 
@@ -12,15 +13,17 @@ def create_logger(name: str, log_level = logging.DEBUG) -> logging.Logger:
 
     return logger
 
-def empty_str_to_none(str) -> None:
-    if str is None:
-        return str
-    elif str == '':
+
+def empty_str_to_none(s: str) -> None:
+    if s is None:
+        return s
+    elif s == '':
         return None
     else:
-        return str
+        return s
 
-def setBudget(min_budget, max_budget):
+
+def set_budget(min_budget, max_budget):
     if max_budget is None and min_budget is None:
         return None
     if max_budget is None and min_budget is not None:
@@ -30,12 +33,14 @@ def setBudget(min_budget, max_budget):
 
     return f'{min_budget}$ - {max_budget}$'
 
-def getPhoneNumberFromDescription(description: str):
-    phone_numbers = re.search(r'((\+)?\b(8|38)?([\d]{3}))([\d-]{5,8})([\d]{2})', description)
+
+def get_phone_number(s: str):
+    phone_numbers = re.search(r'((\+)?\b(8|38)?([\d]{3}))([\d-]{5,8})([\d]{2})', s)
     if phone_numbers:
         return phone_numbers.group(0)
 
-def getEmailFromDescription(description: str):
-    email = re.findall(r'\b([a-z0-9._-]+@[a-z0-9.-]+)\b', description)
+
+def get_email(s: str):
+    email = re.findall(r'\b([a-z0-9._-]+@[a-z0-9.-]+)\b', s)
     email = '/'.join(list(set(email)))
     return email
