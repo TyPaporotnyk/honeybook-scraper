@@ -1,6 +1,6 @@
 # HoneyBook scraper
 
-HoneyBook scraper collects all users information from notifications, adds up users data to database and prints a result to telegram chats
+HoneyBook scraper collects all users information from notifications, adds up users data to the database and prints a result to telegram chats
 
 ## Requirements
 * Python 3.10
